@@ -166,7 +166,7 @@ function getFormData() {
     return formData;
 }
 
-// ===== ГЕНЕРАЦИЯ PDF =====
+// ===== ГЕНЕРАЦИЯ PDF ИСПОЛЬЗУЯ PDFMAKE =====
 async function handleDownloadPDF() {
     const downloadBtn = document.getElementById('downloadPdfBtn');
     const originalText = downloadBtn.textContent;
@@ -186,37 +186,268 @@ async function handleDownloadPDF() {
 
         console.log('Начинаем генерацию PDF для:', formData.clientName);
 
-        // Проверяем что html2pdf загружен
-        if (typeof html2pdf === 'undefined') {
-            throw new Error('html2pdf не загружен. Проверьте интернет-соединение.');
+        // Проверяем что pdfMake загружен
+        if (typeof pdfMake === 'undefined') {
+            throw new Error('pdfMake не загружен. Проверьте интернет-соединение.');
         }
 
-        // Создаём элемент для PDF
-        const element = document.createElement('div');
-        element.style.width = '210mm';
-        element.style.padding = '20px';
-        element.style.backgroundColor = 'white';
-        element.style.fontFamily = 'Arial, sans-serif';
+        // Расчёт калькулятора
+        const revenue = parseFloat(formData.revenue) || 0;
+        const reviewsPerMonth = parseFloat(formData.reviewsPerMonth) || 0;
+        const currentRating = parseFloat(formData.currentRating) || 0;
+        const timeSpent = parseFloat(formData.timeSpent) || 0;
 
-        // Генерируем полный HTML
-        element.innerHTML = generateFullPDFHTML(formData);
+        const timeLoss = timeSpent * 30 * 500;
 
-        document.body.appendChild(element);
-        console.log('Элемент создан и добавлен в DOM');
+        let ratingLoss = 0;
+        if (currentRating > 0 && currentRating < 4.9) {
+            const ratingDeficit = 4.9 - currentRating;
+            const percentLoss = ratingDeficit * 10 * 5;
+            ratingLoss = (revenue * percentLoss) / 100;
+        }
 
-        const opt = {
-            margin: 10,
-            filename: `diagnostic-session-${formData.clientName.replace(/\s+/g, '-')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        let penalties = 0;
+        if (currentRating > 0 && currentRating < 4.5 && reviewsPerMonth > 30) {
+            penalties = revenue * 0.02;
+        }
+
+        let lostProfit = 0;
+        if (timeSpent > 2 && reviewsPerMonth > 50) {
+            const percentUnprocessed = Math.min((timeSpent - 2) * 10, 30);
+            const lostCustomers = (reviewsPerMonth * percentUnprocessed) / 100;
+            lostProfit = lostCustomers * 1500;
+        }
+
+        const totalLoss = timeLoss + ratingLoss + penalties + lostProfit;
+        const monthlySavings = totalLoss - 5000;
+        const sixMonthProfit = (monthlySavings * 6) - 15000;
+        const yearProfit = (monthlySavings * 12) - 15000;
+        const paybackMonths = monthlySavings > 0 ? Math.ceil(15000 / monthlySavings) : 0;
+
+        // Собираем возражения
+        const objections = [];
+        if (formData.objection_ai_mistake) objections.push('AI напишет не то');
+        if (formData.objection_cant_setup) objections.push('Не смогу настроить');
+        if (formData.objection_service_close) objections.push('Сервис закроется');
+        if (formData.objection_legal) objections.push('Это легально?');
+        if (formData.objection_buyers_notice) objections.push('Покупатели поймут');
+        if (formData.objection_price) objections.push('Дорого');
+
+        // Создаём документ pdfMake
+        const docDefinition = {
+            content: [
+                // Заголовок
+                { text: 'ОТЧЁТ ДИАГНОСТИЧЕСКОЙ СЕССИИ', style: 'header' },
+                { text: 'AI-автоматизация отзывов Wildberries', style: 'subheader' },
+                { text: '\n' },
+
+                // 1. Основная информация
+                { text: '📋 Основная информация', style: 'sectionHeader' },
+                {
+                    table: {
+                        widths: ['40%', '60%'],
+                        body: [
+                            ['Имя клиента:', formData.clientName || 'Не указано'],
+                            ['Контакт:', formData.contactInfo || 'Не указано'],
+                            ['Источник:', formData.leadSource || 'Не указано'],
+                            ['Дата сессии:', formData.sessionDate || new Date().toLocaleDateString('ru-RU')]
+                        ]
+                    },
+                    layout: 'lightHorizontalLines',
+                    margin: [0, 5, 0, 15]
+                },
+
+                // 2. Контекст бизнеса
+                { text: '💼 Контекст бизнеса', style: 'sectionHeader' },
+                {
+                    table: {
+                        widths: ['50%', '50%'],
+                        body: [
+                            ['Месячный оборот:', formatCurrency(revenue)],
+                            ['Отзывов в месяц:', reviewsPerMonth.toString()],
+                            ['Текущий рейтинг WB:', currentRating ? currentRating.toString() : 'Не указано'],
+                            ['Время на отзывы в день:', timeSpent ? timeSpent + ' ч.' : 'Не указано']
+                        ]
+                    },
+                    layout: 'lightHorizontalLines',
+                    margin: [0, 5, 0, 10]
+                },
+                formData.currentProcess ? { text: 'Текущий процесс: ' + formData.currentProcess, margin: [0, 5, 0, 15] } : { text: '\n' },
+
+                // 3. Калькулятор потерь
+                { text: '💸 Калькулятор потерь', style: 'sectionHeaderRed' },
+                {
+                    table: {
+                        widths: ['*', 'auto'],
+                        body: [
+                            ['Потери времени:', formatCurrency(timeLoss) + '/мес'],
+                            ['Потери из-за низкого рейтинга:', formatCurrency(ratingLoss) + '/мес'],
+                            ['Штрафы WB:', formatCurrency(penalties) + '/мес'],
+                            ['Упущенная прибыль:', formatCurrency(lostProfit) + '/мес'],
+                            [
+                                { text: 'ОБЩИЕ ПОТЕРИ:', bold: true, fontSize: 12 },
+                                { text: formatCurrency(totalLoss) + '/мес', bold: true, fontSize: 12, color: '#dc2626' }
+                            ]
+                        ]
+                    },
+                    layout: {
+                        fillColor: function (rowIndex) {
+                            return rowIndex === 4 ? '#fee2e2' : null;
+                        }
+                    },
+                    margin: [0, 5, 0, 15]
+                },
+
+                // 4. ROI от внедрения
+                { text: '📊 ROI от внедрения автоматизации', style: 'sectionHeaderGreen' },
+                {
+                    table: {
+                        widths: ['*', 'auto'],
+                        body: [
+                            ['Затраты первый месяц:', '15,000 ₽'],
+                            ['Затраты последующие месяцы:', '5,000 ₽/мес'],
+                            ['Экономия в месяц:', formatCurrency(monthlySavings)],
+                            ['Окупаемость:', paybackMonths > 0 ? paybackMonths + ' мес' : 'Не окупается'],
+                            ['Прибыль за 6 месяцев:', formatCurrency(sixMonthProfit)],
+                            ['Прибыль за год:', formatCurrency(yearProfit)]
+                        ]
+                    },
+                    layout: {
+                        fillColor: function (rowIndex) {
+                            return rowIndex >= 2 ? '#f0fdf4' : null;
+                        }
+                    },
+                    margin: [0, 5, 0, 15]
+                }
+            ],
+
+            styles: {
+                header: {
+                    fontSize: 18,
+                    bold: true,
+                    alignment: 'center',
+                    color: '#667eea',
+                    margin: [0, 0, 0, 5]
+                },
+                subheader: {
+                    fontSize: 12,
+                    alignment: 'center',
+                    color: '#64748b',
+                    margin: [0, 0, 0, 20]
+                },
+                sectionHeader: {
+                    fontSize: 14,
+                    bold: true,
+                    color: '#667eea',
+                    margin: [0, 10, 0, 5]
+                },
+                sectionHeaderRed: {
+                    fontSize: 14,
+                    bold: true,
+                    color: '#dc2626',
+                    margin: [0, 10, 0, 5]
+                },
+                sectionHeaderGreen: {
+                    fontSize: 14,
+                    bold: true,
+                    color: '#16a34a',
+                    margin: [0, 10, 0, 5]
+                },
+                sectionHeaderOrange: {
+                    fontSize: 14,
+                    bold: true,
+                    color: '#ea580c',
+                    margin: [0, 10, 0, 5]
+                },
+                sectionHeaderBlue: {
+                    fontSize: 14,
+                    bold: true,
+                    color: '#0891b2',
+                    margin: [0, 10, 0, 5]
+                }
+            },
+
+            defaultStyle: {
+                font: 'Roboto',
+                fontSize: 10
+            }
         };
 
-        console.log('Запускаем html2pdf...');
-        await html2pdf().set(opt).from(element).save();
-        console.log('PDF создан успешно!');
+        // Добавляем секцию "Боли и проблемы" если есть данные
+        if (formData.whatTried || formData.whyFailed || formData.emotionalPain ||
+            formData.businessImpact || formData.lifeImpact || formData.costOfInaction) {
 
-        document.body.removeChild(element);
+            docDefinition.content.push({ text: '😰 Боли и проблемы', style: 'sectionHeaderRed' });
+
+            const painContent = [];
+            if (formData.whatTried) painContent.push({ text: 'Что пробовал раньше: ' + formData.whatTried, margin: [0, 3, 0, 3] });
+            if (formData.whyFailed) painContent.push({ text: 'Почему не сработало: ' + formData.whyFailed, margin: [0, 3, 0, 3] });
+            if (formData.emotionalPain) painContent.push({ text: 'Эмоциональная боль: ' + formData.emotionalPain, margin: [0, 3, 0, 3] });
+            if (formData.businessImpact) painContent.push({ text: 'Влияние на бизнес: ' + formData.businessImpact, margin: [0, 3, 0, 3] });
+            if (formData.lifeImpact) painContent.push({ text: 'Влияние на жизнь: ' + formData.lifeImpact, margin: [0, 3, 0, 3] });
+            if (formData.costOfInaction) painContent.push({ text: 'Цена бездействия: ' + formatCurrency(parseFloat(formData.costOfInaction)) + '/мес', margin: [0, 3, 0, 3] });
+
+            docDefinition.content.push(...painContent);
+            docDefinition.content.push({ text: '\n' });
+        }
+
+        // Добавляем секцию "Видение и ожидания" если есть данные
+        if (formData.idealSituation || formData.successCriteria || formData.readyToInvest || formData.readyToImplement) {
+            docDefinition.content.push({ text: '🎯 Видение и ожидания', style: 'sectionHeaderGreen' });
+
+            const visionContent = [];
+            if (formData.idealSituation) visionContent.push({ text: 'Идеальная ситуация: ' + formData.idealSituation, margin: [0, 3, 0, 3] });
+            if (formData.successCriteria) visionContent.push({ text: 'Критерии успеха: ' + formData.successCriteria, margin: [0, 3, 0, 3] });
+            if (formData.readyToInvest) visionContent.push({ text: 'Готов инвестировать: ' + formData.readyToInvest, margin: [0, 3, 0, 3] });
+            if (formData.readyToImplement) visionContent.push({ text: 'Готов внедрять: ' + formData.readyToImplement, margin: [0, 3, 0, 3] });
+
+            docDefinition.content.push(...visionContent);
+            docDefinition.content.push({ text: '\n' });
+        }
+
+        // Добавляем секцию "Возражения" если есть данные
+        if (objections.length > 0 || formData.objectionNotes) {
+            docDefinition.content.push({ text: '🚫 Возражения и сомнения', style: 'sectionHeaderOrange' });
+
+            if (objections.length > 0) {
+                docDefinition.content.push({ text: 'Основные возражения: ' + objections.join(', '), margin: [0, 3, 0, 3] });
+            }
+            if (formData.objectionNotes) {
+                docDefinition.content.push({ text: 'Дополнительно: ' + formData.objectionNotes, margin: [0, 3, 0, 3] });
+            }
+            docDefinition.content.push({ text: '\n' });
+        }
+
+        // Добавляем секцию "Итоги сессии" если есть данные
+        if (formData.sessionResult || formData.nextSteps || formData.sessionNotes) {
+            docDefinition.content.push({ text: '✅ Итоги сессии', style: 'sectionHeaderBlue' });
+
+            const resultContent = [];
+            if (formData.sessionResult) resultContent.push({ text: 'Результат: ' + formData.sessionResult, margin: [0, 3, 0, 3] });
+            if (formData.nextSteps) resultContent.push({ text: 'Следующие шаги: ' + formData.nextSteps, margin: [0, 3, 0, 3] });
+            if (formData.sessionNotes) resultContent.push({ text: 'Дополнительные заметки: ' + formData.sessionNotes, margin: [0, 3, 0, 3] });
+
+            docDefinition.content.push(...resultContent);
+            docDefinition.content.push({ text: '\n' });
+        }
+
+        // Футер
+        docDefinition.content.push({
+            text: [
+                'AI-автоматизация отзывов Wildberries | Конфиденциальный документ\n',
+                'Создано: ' + new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU')
+            ],
+            fontSize: 8,
+            color: '#94a3b8',
+            alignment: 'center',
+            margin: [0, 20, 0, 0]
+        });
+
+        // Генерируем и скачиваем PDF
+        const fileName = `diagnostic-session-${formData.clientName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+        pdfMake.createPdf(docDefinition).download(fileName);
+
+        console.log('PDF успешно создан:', fileName);
 
         downloadBtn.disabled = false;
         downloadBtn.textContent = '✅ PDF скачан!';
@@ -228,253 +459,6 @@ async function handleDownloadPDF() {
         downloadBtn.disabled = false;
         downloadBtn.textContent = originalText;
     }
-}
-
-// ===== ГЕНЕРАЦИЯ ПОЛНОГО HTML ДЛЯ PDF =====
-function generateFullPDFHTML(data) {
-    // Расчёт калькулятора
-    const revenue = parseFloat(data.revenue) || 0;
-    const reviewsPerMonth = parseFloat(data.reviewsPerMonth) || 0;
-    const currentRating = parseFloat(data.currentRating) || 0;
-    const timeSpent = parseFloat(data.timeSpent) || 0;
-
-    const timeLoss = timeSpent * 30 * 500;
-
-    let ratingLoss = 0;
-    if (currentRating > 0 && currentRating < 4.9) {
-        const ratingDeficit = 4.9 - currentRating;
-        const percentLoss = ratingDeficit * 10 * 5;
-        ratingLoss = (revenue * percentLoss) / 100;
-    }
-
-    let penalties = 0;
-    if (currentRating > 0 && currentRating < 4.5 && reviewsPerMonth > 30) {
-        penalties = revenue * 0.02;
-    }
-
-    let lostProfit = 0;
-    if (timeSpent > 2 && reviewsPerMonth > 50) {
-        const percentUnprocessed = Math.min((timeSpent - 2) * 10, 30);
-        const lostCustomers = (reviewsPerMonth * percentUnprocessed) / 100;
-        lostProfit = lostCustomers * 1500;
-    }
-
-    const totalLoss = timeLoss + ratingLoss + penalties + lostProfit;
-    const monthlySavings = totalLoss - 5000;
-    const sixMonthProfit = (monthlySavings * 6) - 15000;
-    const yearProfit = (monthlySavings * 12) - 15000;
-    const paybackMonths = monthlySavings > 0 ? Math.ceil(15000 / monthlySavings) : 0;
-
-    // Возражения
-    const objections = [];
-    if (data.objection_ai_mistake) objections.push('AI напишет не то');
-    if (data.objection_cant_setup) objections.push('Не смогу настроить');
-    if (data.objection_service_close) objections.push('Сервис закроется');
-    if (data.objection_legal) objections.push('Это легально?');
-    if (data.objection_buyers_notice) objections.push('Покупатели поймут');
-    if (data.objection_price) objections.push('Дорого');
-
-    return `
-        <div style="max-width: 800px; margin: 0 auto;">
-            <h1 style="color: #667eea; text-align: center; margin-bottom: 5px;">ОТЧЁТ ДИАГНОСТИЧЕСКОЙ СЕССИИ</h1>
-            <p style="text-align: center; color: #64748b; margin-bottom: 30px; font-size: 14px;">AI-автоматизация отзывов Wildberries</p>
-
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <h2 style="color: #667eea; font-size: 16px; margin: 0 0 10px 0;">📋 Основная информация</h2>
-                <p style="margin: 5px 0;"><strong>Имя клиента:</strong> ${data.clientName || 'Не указано'}</p>
-                <p style="margin: 5px 0;"><strong>Контакт:</strong> ${data.contactInfo || 'Не указано'}</p>
-                <p style="margin: 5px 0;"><strong>Источник:</strong> ${data.leadSource || 'Не указано'}</p>
-                <p style="margin: 5px 0;"><strong>Дата сессии:</strong> ${data.sessionDate || new Date().toLocaleDateString('ru-RU')}</p>
-            </div>
-
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <h2 style="color: #667eea; font-size: 16px; margin: 0 0 10px 0;">💼 Контекст бизнеса</h2>
-                <p style="margin: 5px 0;"><strong>Месячный оборот:</strong> ${formatCurrency(revenue)}</p>
-                <p style="margin: 5px 0;"><strong>Отзывов в месяц:</strong> ${reviewsPerMonth || 'Не указано'}</p>
-                <p style="margin: 5px 0;"><strong>Текущий рейтинг WB:</strong> ${currentRating || 'Не указано'}</p>
-                <p style="margin: 5px 0;"><strong>Время на отзывы в день:</strong> ${timeSpent ? timeSpent + ' ч.' : 'Не указано'}</p>
-                ${data.currentProcess ? `<p style="margin: 5px 0;"><strong>Текущий процесс:</strong> ${data.currentProcess}</p>` : ''}
-            </div>
-
-            <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dc2626;">
-                <h2 style="color: #dc2626; font-size: 16px; margin: 0 0 10px 0;">💸 Калькулятор потерь</h2>
-                <p style="margin: 5px 0;"><strong>Потери времени:</strong> ${formatCurrency(timeLoss)}/мес</p>
-                <p style="margin: 5px 0;"><strong>Потери из-за низкого рейтинга:</strong> ${formatCurrency(ratingLoss)}/мес</p>
-                <p style="margin: 5px 0;"><strong>Штрафы WB:</strong> ${formatCurrency(penalties)}/мес</p>
-                <p style="margin: 5px 0;"><strong>Упущенная прибыль:</strong> ${formatCurrency(lostProfit)}/мес</p>
-                <p style="font-size: 18px; font-weight: bold; color: #dc2626; margin: 10px 0 0 0;">ОБЩИЕ ПОТЕРИ: ${formatCurrency(totalLoss)}/мес</p>
-            </div>
-
-            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #16a34a;">
-                <h2 style="color: #16a34a; font-size: 16px; margin: 0 0 10px 0;">📊 ROI от внедрения</h2>
-                <p style="margin: 5px 0;"><strong>Экономия в месяц:</strong> ${formatCurrency(monthlySavings)}</p>
-                <p style="margin: 5px 0;"><strong>Окупаемость:</strong> ${paybackMonths > 0 ? paybackMonths + ' мес' : 'Не окупается'}</p>
-                <p style="margin: 5px 0;"><strong>Прибыль за 6 месяцев:</strong> ${formatCurrency(sixMonthProfit)}</p>
-                <p style="margin: 5px 0;"><strong>Прибыль за год:</strong> ${formatCurrency(yearProfit)}</p>
-            </div>
-
-            ${data.whatTried || data.whyFailed || data.emotionalPain || data.businessImpact || data.lifeImpact || data.costOfInaction ? `
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <h2 style="color: #dc2626; font-size: 16px; margin: 0 0 10px 0;">😰 Боли и проблемы</h2>
-                ${data.whatTried ? `<p style="margin: 5px 0;"><strong>Что пробовал:</strong> ${data.whatTried}</p>` : ''}
-                ${data.whyFailed ? `<p style="margin: 5px 0;"><strong>Почему не сработало:</strong> ${data.whyFailed}</p>` : ''}
-                ${data.emotionalPain ? `<p style="margin: 5px 0;"><strong>Эмоциональная боль:</strong> ${data.emotionalPain}</p>` : ''}
-                ${data.businessImpact ? `<p style="margin: 5px 0;"><strong>Влияние на бизнес:</strong> ${data.businessImpact}</p>` : ''}
-                ${data.lifeImpact ? `<p style="margin: 5px 0;"><strong>Влияние на жизнь:</strong> ${data.lifeImpact}</p>` : ''}
-                ${data.costOfInaction ? `<p style="margin: 5px 0;"><strong>Цена бездействия:</strong> ${formatCurrency(parseFloat(data.costOfInaction))}/мес</p>` : ''}
-            </div>` : ''}
-
-            ${data.idealSituation || data.successCriteria || data.readyToInvest || data.readyToImplement ? `
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <h2 style="color: #16a34a; font-size: 16px; margin: 0 0 10px 0;">🎯 Видение и ожидания</h2>
-                ${data.idealSituation ? `<p style="margin: 5px 0;"><strong>Идеальная ситуация:</strong> ${data.idealSituation}</p>` : ''}
-                ${data.successCriteria ? `<p style="margin: 5px 0;"><strong>Критерии успеха:</strong> ${data.successCriteria}</p>` : ''}
-                ${data.readyToInvest ? `<p style="margin: 5px 0;"><strong>Готов инвестировать:</strong> ${data.readyToInvest}</p>` : ''}
-                ${data.readyToImplement ? `<p style="margin: 5px 0;"><strong>Готов внедрять:</strong> ${data.readyToImplement}</p>` : ''}
-            </div>` : ''}
-
-            ${objections.length > 0 || data.objectionNotes ? `
-            <div style="background: #fff7ed; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <h2 style="color: #ea580c; font-size: 16px; margin: 0 0 10px 0;">🚫 Возражения</h2>
-                ${objections.length > 0 ? `<p style="margin: 5px 0;"><strong>Основные:</strong> ${objections.join(', ')}</p>` : ''}
-                ${data.objectionNotes ? `<p style="margin: 5px 0;"><strong>Дополнительно:</strong> ${data.objectionNotes}</p>` : ''}
-            </div>` : ''}
-
-            ${data.sessionResult || data.nextSteps || data.sessionNotes ? `
-            <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <h2 style="color: #0891b2; font-size: 16px; margin: 0 0 10px 0;">✅ Итоги сессии</h2>
-                ${data.sessionResult ? `<p style="margin: 5px 0;"><strong>Результат:</strong> ${data.sessionResult}</p>` : ''}
-                ${data.nextSteps ? `<p style="margin: 5px 0;"><strong>Следующие шаги:</strong> ${data.nextSteps}</p>` : ''}
-                ${data.sessionNotes ? `<p style="margin: 5px 0;"><strong>Заметки:</strong> ${data.sessionNotes}</p>` : ''}
-            </div>` : ''}
-
-            <div style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
-                <p style="margin: 3px 0;">AI-автоматизация отзывов Wildberries | Конфиденциальный документ</p>
-                <p style="margin: 3px 0;">Создано: ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU')}</p>
-            </div>
-        </div>
-    `;
-}
-
-// ===== ГЕНЕРАЦИЯ HTML ДЛЯ PDF (старая функция, не используется) =====
-function generatePDFHTML(data) {
-    const revenue = parseFloat(data.revenue) || 0;
-    const reviewsPerMonth = parseFloat(data.reviewsPerMonth) || 0;
-    const currentRating = parseFloat(data.currentRating) || 0;
-    const timeSpent = parseFloat(data.timeSpent) || 0;
-
-    const timeLoss = timeSpent * 30 * 500;
-
-    let ratingLoss = 0;
-    if (currentRating > 0 && currentRating < 4.9) {
-        const ratingDeficit = 4.9 - currentRating;
-        const percentLoss = ratingDeficit * 10 * 5;
-        ratingLoss = (revenue * percentLoss) / 100;
-    }
-
-    let penalties = 0;
-    if (currentRating > 0 && currentRating < 4.5 && reviewsPerMonth > 30) {
-        penalties = revenue * 0.02;
-    }
-
-    let lostProfit = 0;
-    if (timeSpent > 2 && reviewsPerMonth > 50) {
-        const percentUnprocessed = Math.min((timeSpent - 2) * 10, 30);
-        const lostCustomers = (reviewsPerMonth * percentUnprocessed) / 100;
-        lostProfit = lostCustomers * 1500;
-    }
-
-    const totalLoss = timeLoss + ratingLoss + penalties + lostProfit;
-    const monthlySavings = totalLoss - 5000;
-    const sixMonthProfit = (monthlySavings * 6) - 15000;
-    const yearProfit = (monthlySavings * 12) - 15000;
-    const paybackMonths = monthlySavings > 0 ? Math.ceil(15000 / monthlySavings) : 0;
-
-    const objections = [];
-    if (data.objection_ai_mistake) objections.push('AI напишет не то');
-    if (data.objection_cant_setup) objections.push('Не смогу настроить');
-    if (data.objection_service_close) objections.push('Сервис закроется');
-    if (data.objection_legal) objections.push('Это легально?');
-    if (data.objection_buyers_notice) objections.push('Покупатели поймут');
-    if (data.objection_price) objections.push('Дорого');
-
-    return `
-    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
-        <h1 style="color: #667eea; text-align: center; margin-bottom: 10px;">ОТЧЁТ ДИАГНОСТИЧЕСКОЙ СЕССИИ</h1>
-        <p style="text-align: center; color: #64748b; margin-bottom: 30px;">AI-автоматизация отзывов Wildberries</p>
-
-        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #667eea; font-size: 18px; margin-bottom: 15px;">📋 Основная информация</h2>
-            <p><strong>Имя клиента:</strong> ${data.clientName || 'Не указано'}</p>
-            <p><strong>Контакт:</strong> ${data.contactInfo || 'Не указано'}</p>
-            <p><strong>Источник:</strong> ${data.leadSource || 'Не указано'}</p>
-            <p><strong>Дата сессии:</strong> ${data.sessionDate || new Date().toLocaleDateString('ru-RU')}</p>
-        </div>
-
-        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #667eea; font-size: 18px; margin-bottom: 15px;">💼 Контекст бизнеса</h2>
-            <p><strong>Месячный оборот:</strong> ${formatCurrency(revenue)}</p>
-            <p><strong>Отзывов в месяц:</strong> ${reviewsPerMonth || 'Не указано'}</p>
-            <p><strong>Текущий рейтинг WB:</strong> ${currentRating || 'Не указано'}</p>
-            <p><strong>Время на отзывы в день:</strong> ${timeSpent ? timeSpent + ' часов' : 'Не указано'}</p>
-            ${data.currentProcess ? `<p><strong>Текущий процесс:</strong> ${data.currentProcess}</p>` : ''}
-        </div>
-
-        <div style="background: #fef2f2; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #dc2626;">
-            <h2 style="color: #dc2626; font-size: 18px; margin-bottom: 15px;">💸 Калькулятор потерь</h2>
-            <p><strong>Потери времени:</strong> ${formatCurrency(timeLoss)}/мес</p>
-            <p><strong>Потери из-за низкого рейтинга:</strong> ${formatCurrency(ratingLoss)}/мес</p>
-            <p><strong>Штрафы WB:</strong> ${formatCurrency(penalties)}/мес</p>
-            <p><strong>Упущенная прибыль:</strong> ${formatCurrency(lostProfit)}/мес</p>
-            <p style="font-size: 20px; font-weight: bold; color: #dc2626; margin-top: 10px;">ОБЩИЕ ПОТЕРИ: ${formatCurrency(totalLoss)}/мес</p>
-        </div>
-
-        <div style="background: #f0fdf4; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #16a34a;">
-            <h2 style="color: #16a34a; font-size: 18px; margin-bottom: 15px;">📊 ROI от внедрения</h2>
-            <p><strong>Экономия в месяц:</strong> ${formatCurrency(monthlySavings)}</p>
-            <p><strong>Окупаемость:</strong> ${paybackMonths > 0 ? paybackMonths + ' мес' : 'Не окупается'}</p>
-            <p><strong>Прибыль за 6 месяцев:</strong> ${formatCurrency(sixMonthProfit)}</p>
-            <p><strong>Прибыль за год:</strong> ${formatCurrency(yearProfit)}</p>
-        </div>
-
-        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #dc2626; font-size: 18px; margin-bottom: 15px;">😰 Боли и проблемы</h2>
-            ${data.whatTried ? `<p><strong>Что пробовал раньше:</strong> ${data.whatTried}</p>` : ''}
-            ${data.whyFailed ? `<p><strong>Почему не сработало:</strong> ${data.whyFailed}</p>` : ''}
-            ${data.emotionalPain ? `<p><strong>Эмоциональная боль:</strong> ${data.emotionalPain}</p>` : ''}
-            ${data.businessImpact ? `<p><strong>Влияние на бизнес:</strong> ${data.businessImpact}</p>` : ''}
-            ${data.lifeImpact ? `<p><strong>Влияние на личную жизнь:</strong> ${data.lifeImpact}</p>` : ''}
-            ${data.costOfInaction ? `<p><strong>Цена бездействия:</strong> ${formatCurrency(parseFloat(data.costOfInaction))}/мес</p>` : ''}
-        </div>
-
-        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #16a34a; font-size: 18px; margin-bottom: 15px;">🎯 Видение и ожидания</h2>
-            ${data.idealSituation ? `<p><strong>Идеальная ситуация:</strong> ${data.idealSituation}</p>` : ''}
-            ${data.successCriteria ? `<p><strong>Критерии успеха:</strong> ${data.successCriteria}</p>` : ''}
-            ${data.readyToInvest ? `<p><strong>Готов инвестировать:</strong> ${data.readyToInvest}</p>` : ''}
-            ${data.readyToImplement ? `<p><strong>Готов внедрять:</strong> ${data.readyToImplement}</p>` : ''}
-        </div>
-
-        ${objections.length > 0 || data.objectionNotes ? `
-        <div style="background: #fff7ed; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #ea580c; font-size: 18px; margin-bottom: 15px;">🚫 Возражения</h2>
-            ${objections.length > 0 ? `<p><strong>Основные возражения:</strong> ${objections.join(', ')}</p>` : ''}
-            ${data.objectionNotes ? `<p><strong>Дополнительно:</strong> ${data.objectionNotes}</p>` : ''}
-        </div>` : ''}
-
-        <div style="background: #e0f2fe; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #0891b2; font-size: 18px; margin-bottom: 15px;">✅ Итоги сессии</h2>
-            ${data.sessionResult ? `<p><strong>Результат:</strong> ${data.sessionResult}</p>` : ''}
-            ${data.nextSteps ? `<p><strong>Следующие шаги:</strong> ${data.nextSteps}</p>` : ''}
-            ${data.sessionNotes ? `<p><strong>Дополнительные заметки:</strong> ${data.sessionNotes}</p>` : ''}
-        </div>
-
-        <div style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-            <p>AI-автоматизация отзывов Wildberries | Конфиденциальный документ</p>
-            <p>Создано: ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU')}</p>
-        </div>
-    </div>
-    `;
 }
 
 // ===== DEBOUNCE =====

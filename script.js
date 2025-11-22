@@ -168,9 +168,10 @@ function getFormData() {
 
 // ===== ГЕНЕРАЦИЯ PDF =====
 async function handleDownloadPDF() {
+    const downloadBtn = document.getElementById('downloadPdfBtn');
+    const originalText = downloadBtn.textContent;
+
     try {
-        const downloadBtn = document.getElementById('downloadPdfBtn');
-        const originalText = downloadBtn.textContent;
         downloadBtn.disabled = true;
         downloadBtn.textContent = '⏳ Генерация PDF...';
 
@@ -183,40 +184,56 @@ async function handleDownloadPDF() {
             return;
         }
 
-        // Создаём временный div элемент
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = generatePDFHTML(formData);
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        document.body.appendChild(tempDiv);
+        console.log('Начинаем генерацию PDF для:', formData.clientName);
 
-        const fileName = `diagnostic-session-${formData.clientName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+        // Проверяем что html2pdf загружен
+        if (typeof html2pdf === 'undefined') {
+            throw new Error('html2pdf не загружен. Проверьте интернет-соединение.');
+        }
+
+        // Создаём элемент для PDF
+        const element = document.createElement('div');
+        element.style.width = '210mm';
+        element.style.padding = '20px';
+        element.style.backgroundColor = 'white';
+        element.style.fontFamily = 'Arial, sans-serif';
+
+        // ТЕСТ: Только имя клиента
+        element.innerHTML = `
+            <h1 style="color: #667eea; text-align: center;">Отчёт диагностической сессии</h1>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">AI-автоматизация отзывов Wildberries</p>
+            <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h2 style="color: #333;">Основная информация</h2>
+                <p><strong>Имя клиента:</strong> ${formData.clientName}</p>
+            </div>
+        `;
+
+        document.body.appendChild(element);
+        console.log('Элемент создан и добавлен в DOM');
 
         const opt = {
             margin: 10,
-            filename: fileName,
+            filename: `diagnostic-session-${formData.clientName.replace(/\s+/g, '-')}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
+            html2canvas: { scale: 2 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // Генерируем PDF из DOM элемента
-        await html2pdf().set(opt).from(tempDiv).save();
+        console.log('Запускаем html2pdf...');
+        await html2pdf().set(opt).from(element).save();
+        console.log('PDF создан успешно!');
 
-        // Удаляем временный элемент
-        document.body.removeChild(tempDiv);
+        document.body.removeChild(element);
 
         downloadBtn.disabled = false;
         downloadBtn.textContent = '✅ PDF скачан!';
         setTimeout(() => { downloadBtn.textContent = originalText; }, 3000);
 
     } catch (error) {
-        console.error('Ошибка генерации PDF:', error);
-        alert('Произошла ошибка при генерации PDF: ' + error.message);
-
-        const downloadBtn = document.getElementById('downloadPdfBtn');
+        console.error('ОШИБКА генерации PDF:', error);
+        alert('Ошибка: ' + error.message);
         downloadBtn.disabled = false;
-        downloadBtn.textContent = '📥 Скачать PDF';
+        downloadBtn.textContent = originalText;
     }
 }
 

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор потерь на отзывах WB</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .calculator-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #2d3748;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-top: 4px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-radius: 15px;
+            border: 3px solid #dc2626;
+        }
+
+        .results.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .results h2 {
+            text-align: center;
+            color: #dc2626;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .loss-item {
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .loss-item .label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .loss-item .amount {
+            font-weight: 700;
+            color: #dc2626;
+            font-size: 18px;
+        }
+
+        .total-loss {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .total-loss .label {
+            color: white;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .total-loss .amount {
+            color: white;
+            font-size: 36px;
+            font-weight: 800;
+        }
+
+        .yearly-loss {
+            text-align: center;
+            color: #dc2626;
+            margin-top: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .cta-section {
+            margin-top: 30px;
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 15px;
+            border: 3px solid #16a34a;
+        }
+
+        .cta-section h3 {
+            color: #16a34a;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .cta-section p {
+            color: #2d3748;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            padding: 16px 40px;
+            background: #16a34a;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .cta-btn:hover {
+            background: #15803d;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(22, 163, 74, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .calculator-container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .total-loss .amount {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>💰 Калькулятор потерь на отзывах</h1>
+        <p class="subtitle">Введи 5 цифр — узнаешь точную сумму потерь за 2 минуты</p>
+
+        <form id="calculatorForm">
+            <div class="input-group">
+                <label for="reviewsPerMonth">Сколько отзывов в месяц ты получаешь?</label>
+                <input type="number" id="reviewsPerMonth" name="reviewsPerMonth" placeholder="Например: 80" required>
+                <div class="hint">Посмотри в личном кабинете WB за последний месяц</div>
+            </div>
+
+            <div class="input-group">
+                <label for="timePerReview">Сколько времени уходит на 1 отзыв? (минут)</label>
+                <input type="number" id="timePerReview" name="timePerReview" placeholder="Например: 3" required>
+                <div class="hint">Включая чтение, обдумывание, написание ответа</div>
+            </div>
+
+            <div class="input-group">
+                <label for="monthlyRevenue">Какой у тебя месячный оборот на WB? (₽)</label>
+                <input type="number" id="monthlyRevenue" name="monthlyRevenue" placeholder="Например: 800000" required>
+                <div class="hint">В рублях, без пробелов</div>
+            </div>
+
+            <div class="input-group">
+                <label for="processedPercent">Сколько процентов отзывов ты обрабатываешь?</label>
+                <input type="number" id="processedPercent" name="processedPercent" placeholder="Например: 70" min="0" max="100" required>
+                <div class="hint">Честно, сколько успеваешь ответить</div>
+            </div>
+
+            <div class="input-group">
+                <label for="currentRating">Какой у тебя текущий рейтинг на WB?</label>
+                <input type="number" id="currentRating" name="currentRating" step="0.1" placeholder="Например: 4.6" min="1" max="5" required>
+                <div class="hint">Средний рейтинг товаров</div>
+            </div>
+
+            <button type="submit" class="calculate-btn">🔥 Посчитать мои потери</button>
+        </form>
+
+        <div id="results" class="results">
+            <h2>💸 ТВОИ ЕЖЕМЕСЯЧНЫЕ ПОТЕРИ</h2>
+
+            <div class="loss-item">
+                <div class="label">⏰ Потери времени:</div>
+                <div class="amount" id="timeLoss">0 ₽/мес</div>
+            </div>
+
+            <div class="loss-item">
+                <div class="label">📉 Упущенная прибыль:</div>
+                <div class="amount" id="lostProfit">0 ₽/мес</div>
+            </div>
+
+            <div class="loss-item">
+                <div class="label">📊 Потери от низкого рейтинга:</div>
+                <div class="amount" id="ratingLoss">0 ₽/мес</div>
+            </div>
+
+            <div class="loss-item">
+                <div class="label">⚠️ Штрафы WB:</div>
+                <div class="amount" id="penalties">0 ₽/мес</div>
+            </div>
+
+            <div class="total-loss">
+                <div class="label">🔥 ОБЩИЕ ПОТЕРИ:</div>
+                <div class="amount" id="totalLoss">0 ₽ В МЕСЯЦ</div>
+            </div>
+
+            <div class="yearly-loss">
+                За год ты теряешь: <span id="yearlyLoss">0 ₽</span>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; padding: 25px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 15px; border: 3px solid #16a34a;">
+                <h3 style="color: #16a34a; margin-bottom: 15px; font-size: 22px;">😱 Охренеть, да?</h3>
+                <p style="color: #2d3748; margin-bottom: 15px; line-height: 1.6;">Хочешь <strong>вернуть эти деньги</strong>? Автоматизация отзывов окупается за 2 дня.</p>
+                <p style="color: #2d3748; font-size: 18px; font-weight: 600;">👉 Записаться на диагностику — смотри ниже по кнопке</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Получаем данные из формы
+            const reviewsPerMonth = parseFloat(document.getElementById('reviewsPerMonth').value) || 0;
+            const timePerReview = parseFloat(document.getElementById('timePerReview').value) || 0;
+            const monthlyRevenue = parseFloat(document.getElementById('monthlyRevenue').value) || 0;
+            const processedPercent = parseFloat(document.getElementById('processedPercent').value) || 0;
+            const currentRating = parseFloat(document.getElementById('currentRating').value) || 0;
+
+            // РАСЧЁТ 1: Потери времени
+            const hourlyRate = monthlyRevenue / 160; // Стоимость часа = оборот / 160 рабочих часов
+            const totalMinutesPerMonth = reviewsPerMonth * timePerReview;
+            const totalHoursPerMonth = totalMinutesPerMonth / 60;
+            const timeLoss = totalHoursPerMonth * hourlyRate;
+
+            // РАСЧЁТ 2: Упущенная прибыль
+            const unprocessedPercent = 100 - processedPercent;
+            const unprocessedReviews = (reviewsPerMonth * unprocessedPercent) / 100;
+
+            // Оцениваем средний чек: ~25% покупателей оставляют отзывы
+            const estimatedOrders = reviewsPerMonth / 0.25;
+            const averageCheck = monthlyRevenue / estimatedOrders;
+
+            // Каждый необработанный отзыв = потеря повторной покупки
+            // 50% необработанных клиентов не вернутся за повторной покупкой
+            const lostProfit = unprocessedReviews * averageCheck * 0.5;
+
+            // РАСЧЁТ 3: Потери от низкого рейтинга
+            let ratingLoss = 0;
+            if (currentRating > 0 && currentRating < 4.9) {
+                const ratingDeficit = 4.9 - currentRating;
+                const percentLoss = ratingDeficit * 10 * 5; // Каждые -0.1 = -5% продаж
+                ratingLoss = (monthlyRevenue * percentLoss) / 100;
+            }
+
+            // РАСЧЁТ 4: Штрафы WB
+            let penalties = 0;
+            if (currentRating > 0 && currentRating < 4.5 && reviewsPerMonth > 30) {
+                penalties = monthlyRevenue * 0.02; // 2% штраф
+            }
+
+            // ИТОГО
+            const totalLoss = timeLoss + lostProfit + ratingLoss + penalties;
+            const yearlyLoss = totalLoss * 12;
+
+            // Форматируем числа
+            function formatCurrency(amount) {
+                return Math.round(amount).toLocaleString('ru-RU');
+            }
+
+            // Выводим результаты
+            document.getElementById('timeLoss').textContent = formatCurrency(timeLoss) + ' ₽/мес';
+            document.getElementById('lostProfit').textContent = formatCurrency(lostProfit) + ' ₽/мес';
+            document.getElementById('ratingLoss').textContent = formatCurrency(ratingLoss) + ' ₽/мес';
+            document.getElementById('penalties').textContent = formatCurrency(penalties) + ' ₽/мес';
+            document.getElementById('totalLoss').textContent = formatCurrency(totalLoss) + ' ₽ В МЕСЯЦ';
+            document.getElementById('yearlyLoss').textContent = formatCurrency(yearlyLoss) + ' ₽';
+
+            // Показываем результаты
+            document.getElementById('results').classList.add('show');
+
+            // Плавно скроллим к результатам
+            setTimeout(() => {
+                document.getElementById('results').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest'
+                });
+            }, 300);
+        });
+    </script>
+</body>
+</html>

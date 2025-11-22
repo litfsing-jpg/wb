@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диагностическая сессия - AI Автоматизация отзывов WB</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- jsPDF для генерации PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>AI Автоматизация отзывов</h1>
+                <p>Диагностическая сессия</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container">
+                <h2>Заполнение данных клиента</h2>
+                <p>Используйте эту форму во время Zoom-звонка для сбора информации о клиенте</p>
+            </div>
+        </section>
+
+        <!-- Diagnostic Form -->
+        <section class="diagnostic-form-section">
+            <div class="container">
+                <form id="diagnosticForm">
+
+                    <!-- БЛОК 1: ОСНОВНАЯ ИНФОРМАЦИЯ -->
+                    <div class="form-block">
+                        <h3>📋 Основная информация</h3>
+
+                        <div class="form-group">
+                            <label for="clientName">Имя клиента *</label>
+                            <input type="text" id="clientName" name="clientName" required placeholder="Введите имя">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactInfo">Контакт (Telegram/WhatsApp/Телефон)</label>
+                            <input type="text" id="contactInfo" name="contactInfo" placeholder="@username или +7...">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="leadSource">Откуда пришёл лид</label>
+                            <select id="leadSource" name="leadSource">
+                                <option value="">Выберите источник</option>
+                                <option value="yandex">Яндекс.Директ</option>
+                                <option value="recommendation">Рекомендация</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="telegram">Telegram</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- БЛОК 2: КОНТЕКСТ БИЗНЕСА -->
+                    <div class="form-block">
+                        <h3>💼 Контекст бизнеса</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="revenue">Месячный оборот (₽) *</label>
+                                <input type="number" id="revenue" name="revenue" required placeholder="500000">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reviewsPerMonth">Отзывов в месяц *</label>
+                                <input type="number" id="reviewsPerMonth" name="reviewsPerMonth" required placeholder="50-150">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="currentRating">Текущий рейтинг WB</label>
+                                <input type="number" id="currentRating" name="currentRating" step="0.1" min="1" max="5" placeholder="4.6">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="timeSpent">Время на отзывы в день (часов)</label>
+                                <input type="number" id="timeSpent" name="timeSpent" step="0.5" placeholder="2">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="currentProcess">Как сейчас обрабатывает отзывы</label>
+                            <textarea id="currentProcess" name="currentProcess" rows="3" placeholder="Описание текущего процесса: вручную, шаблоны, VA и т.д."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- БЛОК 3: БОЛИ И ПРОБЛЕМЫ -->
+                    <div class="form-block pain-block">
+                        <h3>😰 Боли и проблемы</h3>
+
+                        <div class="form-group">
+                            <label for="whatTried">Что пробовал раньше</label>
+                            <textarea id="whatTried" name="whatTried" rows="3" placeholder="VA, шаблоны, наём помощника и т.д."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="whyFailed">Почему не сработало</label>
+                            <textarea id="whyFailed" name="whyFailed" rows="3" placeholder="Причины неудач предыдущих попыток"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="emotionalPain">Эмоциональная боль (как чувствует себя)</label>
+                            <textarea id="emotionalPain" name="emotionalPain" rows="3" placeholder="Замучился, боюсь заходить в WB, нет времени на семью и т.д."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="businessImpact">Влияние на бизнес</label>
+                            <textarea id="businessImpact" name="businessImpact" rows="3" placeholder="Падение рейтинга, потеря продаж, штрафы WB и т.д."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lifeImpact">Влияние на личную жизнь</label>
+                            <textarea id="lifeImpact" name="lifeImpact" rows="3" placeholder="Нет времени на семью, работаю по ночам и т.д."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="costOfInaction">Цена бездействия (в деньгах/месяц)</label>
+                            <input type="number" id="costOfInaction" name="costOfInaction" placeholder="30000">
+                        </div>
+                    </div>
+
+                    <!-- БЛОК 4: ВИДЕНИЕ И ОЖИДАНИЯ -->
+                    <div class="form-block vision-block">
+                        <h3>🎯 Видение и ожидания</h3>
+
+                        <div class="form-group">
+                            <label for="idealSituation">Идеальная ситуация (что хочет получить)</label>
+                            <textarea id="idealSituation" name="idealSituation" rows="3" placeholder="100% отзывов обработаны, рейтинг 4.8+, 0 времени на отзывы"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="successCriteria">Критерии успеха (как поймёт что работает)</label>
+                            <textarea id="successCriteria" name="successCriteria" rows="3" placeholder="Все отзывы обработаны за час, качественные ответы, рейтинг не падает"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="readyToInvest">Готов инвестировать</label>
+                                <select id="readyToInvest" name="readyToInvest">
+                                    <option value="">Выберите</option>
+                                    <option value="yes">Да, готов</option>
+                                    <option value="need-to-think">Нужно подумать</option>
+                                    <option value="budget-limit">Есть бюджетное ограничение</option>
+                                    <option value="no">Не готов</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="readyToImplement">Готов внедрять</label>
+                                <select id="readyToImplement" name="readyToImplement">
+                                    <option value="">Выберите</option>
+                                    <option value="yes">Да, готов сейчас</option>
+                                    <option value="soon">Готов в ближайшее время</option>
+                                    <option value="later">Позже</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- БЛОК 5: ВОЗРАЖЕНИЯ -->
+                    <div class="form-block objections-block">
+                        <h3>🚫 Возражения и сомнения</h3>
+
+                        <div class="form-group">
+                            <label>Основные возражения (отметьте)</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="objection_ai_mistake" value="AI напишет не то">
+                                    AI напишет что-то не то
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="objection_cant_setup" value="Не смогу настроить">
+                                    Я не смогу это настроить
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="objection_service_close" value="Сервис закроется">
+                                    Вы закроетесь
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="objection_legal" value="Это легально?">
+                                    Это легально? WB не заблокирует?
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="objection_buyers_notice" value="Покупатели поймут">
+                                    Покупатели поймут что это AI
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="objection_price" value="Дорого">
+                                    Дорого
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="objectionNotes">Дополнительные возражения и заметки</label>
+                            <textarea id="objectionNotes" name="objectionNotes" rows="3" placeholder="Другие возражения или важные заметки"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- БЛОК 6: ИТОГИ СЕССИИ -->
+                    <div class="form-block result-block">
+                        <h3>✅ Итоги сессии</h3>
+
+                        <div class="form-group">
+                            <label for="sessionResult">Результат диагностики</label>
+                            <select id="sessionResult" name="sessionResult">
+                                <option value="">Выберите результат</option>
+                                <option value="paid">Оплатил (15,000₽)</option>
+                                <option value="prepaid">Внёс предоплату (5,000₽)</option>
+                                <option value="think">Подумает (назначена дата)</option>
+                                <option value="refused">Отказался</option>
+                                <option value="not_fit">Не подходит (красные флаги)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nextSteps">Следующие шаги</label>
+                            <textarea id="nextSteps" name="nextSteps" rows="3" placeholder="Что делаем дальше: настройка, повторный звонок, отказ и т.д."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sessionNotes">Дополнительные заметки</label>
+                            <textarea id="sessionNotes" name="sessionNotes" rows="4" placeholder="Любые дополнительные заметки о клиенте"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sessionDate">Дата сессии</label>
+                            <input type="date" id="sessionDate" name="sessionDate">
+                        </div>
+                    </div>
+
+                    <!-- Кнопки -->
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="clearBtn">Очистить форму</button>
+                        <button type="button" class="btn btn-primary" id="downloadPdfBtn">📥 Скачать PDF</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="testimonials">
+            <div class="container">
+                <h2>Отзывы клиентов</h2>
+                <div class="testimonials-grid">
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-header">
+                            <div class="testimonial-avatar">АС</div>
+                            <div class="testimonial-info">
+                                <h4>Анна Смирнова</h4>
+                                <p>Селлер одежды, 1.2M₽/мес</p>
+                            </div>
+                        </div>
+                        <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
+                        <p class="testimonial-text">"Раньше тратила 3 часа в день на отзывы. Сейчас вообще не думаю об этом - система всё делает сама. Рейтинг вырос с 4.5 до 4.9 за месяц!"</p>
+                        <div class="testimonial-result">
+                            <strong>Результат:</strong> Экономия 90 часов/мес, рейтинг +0.4
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-header">
+                            <div class="testimonial-avatar">ДК</div>
+                            <div class="testimonial-info">
+                                <h4>Дмитрий Ковалёв</h4>
+                                <p>Селлер электроники, 800k₽/мес</p>
+                            </div>
+                        </div>
+                        <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
+                        <p class="testimonial-text">"Боялся что AI напишет что-то не то. Первую неделю проверял каждый ответ - все качественные! Сейчас даже не проверяю, полностью доверяю системе."</p>
+                        <div class="testimonial-result">
+                            <strong>Результат:</strong> 100% отзывов обработаны, 0 жалоб
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-header">
+                            <div class="testimonial-avatar">МП</div>
+                            <div class="testimonial-info">
+                                <h4>Мария Петрова</h4>
+                                <p>Селлер косметики, 1.5M₽/мес</p>
+                            </div>
+                        </div>
+                        <div class="testimonial-rating">⭐⭐⭐⭐⭐</div>
+                        <p class="testimonial-text">"Главное для меня - освободилось время. Раньше работала до 11 вечера, сейчас в 18:00 закрываю ноутбук. Могу проводить время с детьми!"</p>
+                        <div class="testimonial-result">
+                            <strong>Результат:</strong> +3 часа свободного времени ежедневно
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Cases Section -->
+        <section class="cases">
+            <div class="container">
+                <h2>Кейсы клиентов</h2>
+
+                <div class="case-card">
+                    <div class="case-header">
+                        <h3>Кейс #1: Соло-селлер одежды</h3>
+                        <span class="case-tag">3 месяца работы</span>
+                    </div>
+                    <div class="case-content">
+                        <div class="case-before">
+                            <h4>Было:</h4>
+                            <ul>
+                                <li>Оборот: 900k₽/мес</li>
+                                <li>Рейтинг: 4.4</li>
+                                <li>Время на отзывы: 2.5 часа/день</li>
+                                <li>Отзывов в месяц: 80</li>
+                                <li>Обработано: 60% (20% игнорировались)</li>
+                            </ul>
+                        </div>
+                        <div class="case-arrow">→</div>
+                        <div class="case-after">
+                            <h4>Стало:</h4>
+                            <ul>
+                                <li>Оборот: 1.2M₽/мес (+33%)</li>
+                                <li>Рейтинг: 4.9 (+0.5)</li>
+                                <li>Время на отзывы: 0 часов/день</li>
+                                <li>Отзывов в месяц: 120 (рост продаж)</li>
+                                <li>Обработано: 100%</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="case-result">
+                        <strong>Итог:</strong> Экономия 75 часов/мес, рост выручки на 300k₽, рейтинг вырос на 0.5
+                    </div>
+                </div>
+
+                <div class="case-card">
+                    <div class="case-header">
+                        <h3>Кейс #2: Селлер электроники</h3>
+                        <span class="case-tag">6 месяцев работы</span>
+                    </div>
+                    <div class="case-content">
+                        <div class="case-before">
+                            <h4>Было:</h4>
+                            <ul>
+                                <li>Оборот: 1.5M₽/мес</li>
+                                <li>Рейтинг: 4.6</li>
+                                <li>Штрафы WB: 15k₽/мес</li>
+                                <li>Наёмный помощник: 18k₽/мес</li>
+                                <li>Время на контроль: 1 час/день</li>
+                            </ul>
+                        </div>
+                        <div class="case-arrow">→</div>
+                        <div class="case-after">
+                            <h4>Стало:</h4>
+                            <ul>
+                                <li>Оборот: 1.8M₽/мес (+20%)</li>
+                                <li>Рейтинг: 4.9 (+0.3)</li>
+                                <li>Штрафы WB: 0₽/мес</li>
+                                <li>Затраты: 5k₽/мес (подписка)</li>
+                                <li>Время на контроль: 0 часов</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="case-result">
+                        <strong>Итог:</strong> Экономия 28k₽/мес на затратах, рост выручки на 300k₽, 0 штрафов WB
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 AI Автоматизация отзывов Wildberries. Все права защищены.</p>
+            <p>Диагностическая сессия - конфиденциальный инструмент для продавца</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>

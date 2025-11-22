@@ -333,9 +333,14 @@
             // РАСЧЁТ 2: Упущенная прибыль
             const unprocessedPercent = 100 - processedPercent;
             const unprocessedReviews = (reviewsPerMonth * unprocessedPercent) / 100;
-            const lostCustomers = unprocessedReviews * 0.3; // 30% не вернутся
-            const averageReturn = 300; // Средний чек возврата
-            const lostProfit = lostCustomers * averageReturn;
+
+            // Оцениваем средний чек: ~25% покупателей оставляют отзывы
+            const estimatedOrders = reviewsPerMonth / 0.25;
+            const averageCheck = monthlyRevenue / estimatedOrders;
+
+            // Каждый необработанный отзыв = потеря повторной покупки
+            // 50% необработанных клиентов не вернутся за повторной покупкой
+            const lostProfit = unprocessedReviews * averageCheck * 0.5;
 
             // РАСЧЁТ 3: Потери от низкого рейтинга
             let ratingLoss = 0;

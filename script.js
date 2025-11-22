@@ -198,15 +198,8 @@ async function handleDownloadPDF() {
         element.style.backgroundColor = 'white';
         element.style.fontFamily = 'Arial, sans-serif';
 
-        // ТЕСТ: Только имя клиента
-        element.innerHTML = `
-            <h1 style="color: #667eea; text-align: center;">Отчёт диагностической сессии</h1>
-            <p style="text-align: center; color: #666; margin-bottom: 30px;">AI-автоматизация отзывов Wildberries</p>
-            <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                <h2 style="color: #333;">Основная информация</h2>
-                <p><strong>Имя клиента:</strong> ${formData.clientName}</p>
-            </div>
-        `;
+        // Генерируем полный HTML
+        element.innerHTML = generateFullPDFHTML(formData);
 
         document.body.appendChild(element);
         console.log('Элемент создан и добавлен в DOM');
@@ -237,7 +230,133 @@ async function handleDownloadPDF() {
     }
 }
 
-// ===== ГЕНЕРАЦИЯ HTML ДЛЯ PDF =====
+// ===== ГЕНЕРАЦИЯ ПОЛНОГО HTML ДЛЯ PDF =====
+function generateFullPDFHTML(data) {
+    // Расчёт калькулятора
+    const revenue = parseFloat(data.revenue) || 0;
+    const reviewsPerMonth = parseFloat(data.reviewsPerMonth) || 0;
+    const currentRating = parseFloat(data.currentRating) || 0;
+    const timeSpent = parseFloat(data.timeSpent) || 0;
+
+    const timeLoss = timeSpent * 30 * 500;
+
+    let ratingLoss = 0;
+    if (currentRating > 0 && currentRating < 4.9) {
+        const ratingDeficit = 4.9 - currentRating;
+        const percentLoss = ratingDeficit * 10 * 5;
+        ratingLoss = (revenue * percentLoss) / 100;
+    }
+
+    let penalties = 0;
+    if (currentRating > 0 && currentRating < 4.5 && reviewsPerMonth > 30) {
+        penalties = revenue * 0.02;
+    }
+
+    let lostProfit = 0;
+    if (timeSpent > 2 && reviewsPerMonth > 50) {
+        const percentUnprocessed = Math.min((timeSpent - 2) * 10, 30);
+        const lostCustomers = (reviewsPerMonth * percentUnprocessed) / 100;
+        lostProfit = lostCustomers * 1500;
+    }
+
+    const totalLoss = timeLoss + ratingLoss + penalties + lostProfit;
+    const monthlySavings = totalLoss - 5000;
+    const sixMonthProfit = (monthlySavings * 6) - 15000;
+    const yearProfit = (monthlySavings * 12) - 15000;
+    const paybackMonths = monthlySavings > 0 ? Math.ceil(15000 / monthlySavings) : 0;
+
+    // Возражения
+    const objections = [];
+    if (data.objection_ai_mistake) objections.push('AI напишет не то');
+    if (data.objection_cant_setup) objections.push('Не смогу настроить');
+    if (data.objection_service_close) objections.push('Сервис закроется');
+    if (data.objection_legal) objections.push('Это легально?');
+    if (data.objection_buyers_notice) objections.push('Покупатели поймут');
+    if (data.objection_price) objections.push('Дорого');
+
+    return `
+        <div style="max-width: 800px; margin: 0 auto;">
+            <h1 style="color: #667eea; text-align: center; margin-bottom: 5px;">ОТЧЁТ ДИАГНОСТИЧЕСКОЙ СЕССИИ</h1>
+            <p style="text-align: center; color: #64748b; margin-bottom: 30px; font-size: 14px;">AI-автоматизация отзывов Wildberries</p>
+
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h2 style="color: #667eea; font-size: 16px; margin: 0 0 10px 0;">📋 Основная информация</h2>
+                <p style="margin: 5px 0;"><strong>Имя клиента:</strong> ${data.clientName || 'Не указано'}</p>
+                <p style="margin: 5px 0;"><strong>Контакт:</strong> ${data.contactInfo || 'Не указано'}</p>
+                <p style="margin: 5px 0;"><strong>Источник:</strong> ${data.leadSource || 'Не указано'}</p>
+                <p style="margin: 5px 0;"><strong>Дата сессии:</strong> ${data.sessionDate || new Date().toLocaleDateString('ru-RU')}</p>
+            </div>
+
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h2 style="color: #667eea; font-size: 16px; margin: 0 0 10px 0;">💼 Контекст бизнеса</h2>
+                <p style="margin: 5px 0;"><strong>Месячный оборот:</strong> ${formatCurrency(revenue)}</p>
+                <p style="margin: 5px 0;"><strong>Отзывов в месяц:</strong> ${reviewsPerMonth || 'Не указано'}</p>
+                <p style="margin: 5px 0;"><strong>Текущий рейтинг WB:</strong> ${currentRating || 'Не указано'}</p>
+                <p style="margin: 5px 0;"><strong>Время на отзывы в день:</strong> ${timeSpent ? timeSpent + ' ч.' : 'Не указано'}</p>
+                ${data.currentProcess ? `<p style="margin: 5px 0;"><strong>Текущий процесс:</strong> ${data.currentProcess}</p>` : ''}
+            </div>
+
+            <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dc2626;">
+                <h2 style="color: #dc2626; font-size: 16px; margin: 0 0 10px 0;">💸 Калькулятор потерь</h2>
+                <p style="margin: 5px 0;"><strong>Потери времени:</strong> ${formatCurrency(timeLoss)}/мес</p>
+                <p style="margin: 5px 0;"><strong>Потери из-за низкого рейтинга:</strong> ${formatCurrency(ratingLoss)}/мес</p>
+                <p style="margin: 5px 0;"><strong>Штрафы WB:</strong> ${formatCurrency(penalties)}/мес</p>
+                <p style="margin: 5px 0;"><strong>Упущенная прибыль:</strong> ${formatCurrency(lostProfit)}/мес</p>
+                <p style="font-size: 18px; font-weight: bold; color: #dc2626; margin: 10px 0 0 0;">ОБЩИЕ ПОТЕРИ: ${formatCurrency(totalLoss)}/мес</p>
+            </div>
+
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #16a34a;">
+                <h2 style="color: #16a34a; font-size: 16px; margin: 0 0 10px 0;">📊 ROI от внедрения</h2>
+                <p style="margin: 5px 0;"><strong>Экономия в месяц:</strong> ${formatCurrency(monthlySavings)}</p>
+                <p style="margin: 5px 0;"><strong>Окупаемость:</strong> ${paybackMonths > 0 ? paybackMonths + ' мес' : 'Не окупается'}</p>
+                <p style="margin: 5px 0;"><strong>Прибыль за 6 месяцев:</strong> ${formatCurrency(sixMonthProfit)}</p>
+                <p style="margin: 5px 0;"><strong>Прибыль за год:</strong> ${formatCurrency(yearProfit)}</p>
+            </div>
+
+            ${data.whatTried || data.whyFailed || data.emotionalPain || data.businessImpact || data.lifeImpact || data.costOfInaction ? `
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h2 style="color: #dc2626; font-size: 16px; margin: 0 0 10px 0;">😰 Боли и проблемы</h2>
+                ${data.whatTried ? `<p style="margin: 5px 0;"><strong>Что пробовал:</strong> ${data.whatTried}</p>` : ''}
+                ${data.whyFailed ? `<p style="margin: 5px 0;"><strong>Почему не сработало:</strong> ${data.whyFailed}</p>` : ''}
+                ${data.emotionalPain ? `<p style="margin: 5px 0;"><strong>Эмоциональная боль:</strong> ${data.emotionalPain}</p>` : ''}
+                ${data.businessImpact ? `<p style="margin: 5px 0;"><strong>Влияние на бизнес:</strong> ${data.businessImpact}</p>` : ''}
+                ${data.lifeImpact ? `<p style="margin: 5px 0;"><strong>Влияние на жизнь:</strong> ${data.lifeImpact}</p>` : ''}
+                ${data.costOfInaction ? `<p style="margin: 5px 0;"><strong>Цена бездействия:</strong> ${formatCurrency(parseFloat(data.costOfInaction))}/мес</p>` : ''}
+            </div>` : ''}
+
+            ${data.idealSituation || data.successCriteria || data.readyToInvest || data.readyToImplement ? `
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h2 style="color: #16a34a; font-size: 16px; margin: 0 0 10px 0;">🎯 Видение и ожидания</h2>
+                ${data.idealSituation ? `<p style="margin: 5px 0;"><strong>Идеальная ситуация:</strong> ${data.idealSituation}</p>` : ''}
+                ${data.successCriteria ? `<p style="margin: 5px 0;"><strong>Критерии успеха:</strong> ${data.successCriteria}</p>` : ''}
+                ${data.readyToInvest ? `<p style="margin: 5px 0;"><strong>Готов инвестировать:</strong> ${data.readyToInvest}</p>` : ''}
+                ${data.readyToImplement ? `<p style="margin: 5px 0;"><strong>Готов внедрять:</strong> ${data.readyToImplement}</p>` : ''}
+            </div>` : ''}
+
+            ${objections.length > 0 || data.objectionNotes ? `
+            <div style="background: #fff7ed; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h2 style="color: #ea580c; font-size: 16px; margin: 0 0 10px 0;">🚫 Возражения</h2>
+                ${objections.length > 0 ? `<p style="margin: 5px 0;"><strong>Основные:</strong> ${objections.join(', ')}</p>` : ''}
+                ${data.objectionNotes ? `<p style="margin: 5px 0;"><strong>Дополнительно:</strong> ${data.objectionNotes}</p>` : ''}
+            </div>` : ''}
+
+            ${data.sessionResult || data.nextSteps || data.sessionNotes ? `
+            <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h2 style="color: #0891b2; font-size: 16px; margin: 0 0 10px 0;">✅ Итоги сессии</h2>
+                ${data.sessionResult ? `<p style="margin: 5px 0;"><strong>Результат:</strong> ${data.sessionResult}</p>` : ''}
+                ${data.nextSteps ? `<p style="margin: 5px 0;"><strong>Следующие шаги:</strong> ${data.nextSteps}</p>` : ''}
+                ${data.sessionNotes ? `<p style="margin: 5px 0;"><strong>Заметки:</strong> ${data.sessionNotes}</p>` : ''}
+            </div>` : ''}
+
+            <div style="text-align: center; color: #94a3b8; font-size: 11px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 3px 0;">AI-автоматизация отзывов Wildberries | Конфиденциальный документ</p>
+                <p style="margin: 3px 0;">Создано: ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU')}</p>
+            </div>
+        </div>
+    `;
+}
+
+// ===== ГЕНЕРАЦИЯ HTML ДЛЯ PDF (старая функция, не используется) =====
 function generatePDFHTML(data) {
     const revenue = parseFloat(data.revenue) || 0;
     const reviewsPerMonth = parseFloat(data.reviewsPerMonth) || 0;

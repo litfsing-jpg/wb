@@ -124,6 +124,17 @@ header {
     color: #0891b2;
 }
 
+.calculator-block h3 {
+    color: #f59e0b;
+}
+
+.calculator-desc {
+    font-size: 0.9375rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+}
+
 /* ===== FORM GROUPS ===== */
 .form-group {
     margin-bottom: 1.5rem;
@@ -253,6 +264,128 @@ header {
 .btn-secondary:hover {
     background: #f8fafc;
     transform: translateY(-2px);
+}
+
+/* ===== КАЛЬКУЛЯТОР ПОТЕРЬ ===== */
+.calculator-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.calc-card {
+    background: linear-gradient(135deg, #fff9f0 0%, #fff 100%);
+    border: 2px solid #fed7aa;
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.calc-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+}
+
+.calc-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.calc-card h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #78350f;
+    margin-bottom: 0.75rem;
+}
+
+.calc-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #dc2626;
+    margin-bottom: 0.5rem;
+}
+
+.calc-formula {
+    font-size: 0.75rem;
+    color: #92400e;
+    font-style: italic;
+}
+
+.calc-total {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 3px solid #dc2626;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.calc-total-label {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #991b1b;
+}
+
+.calc-total-value {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #dc2626;
+}
+
+.calc-roi {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 2px solid #16a34a;
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+
+.calc-roi h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #15803d;
+    margin-bottom: 1.25rem;
+}
+
+.roi-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.roi-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+}
+
+.roi-item.highlight {
+    background: #bbf7d0;
+    border: 2px solid #16a34a;
+    font-weight: 700;
+}
+
+.roi-label {
+    font-size: 0.9375rem;
+    color: #166534;
+}
+
+.roi-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #15803d;
+}
+
+.roi-item.highlight .roi-value {
+    font-size: 1.125rem;
+    color: #16a34a;
 }
 
 /* ===== TESTIMONIALS SECTION ===== */
@@ -583,6 +716,25 @@ footer p {
     .case-before,
     .case-after {
         padding: 1rem;
+    }
+
+    /* Calculator */
+    .calculator-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .calc-total {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .calc-total-label {
+        font-size: 1rem;
+    }
+
+    .calc-total-value {
+        font-size: 1.75rem;
     }
 }
 

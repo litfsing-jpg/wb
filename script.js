@@ -183,7 +183,13 @@ async function handleDownloadPDF() {
             return;
         }
 
-        const pdfContent = generatePDFHTML(formData);
+        // Создаём временный div элемент
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = generatePDFHTML(formData);
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
         const fileName = `diagnostic-session-${formData.clientName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
 
         const opt = {
@@ -194,7 +200,11 @@ async function handleDownloadPDF() {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        await html2pdf().set(opt).from(pdfContent).save();
+        // Генерируем PDF из DOM элемента
+        await html2pdf().set(opt).from(tempDiv).save();
+
+        // Удаляем временный элемент
+        document.body.removeChild(tempDiv);
 
         downloadBtn.disabled = false;
         downloadBtn.textContent = '✅ PDF скачан!';
